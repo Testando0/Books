@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Leitor de Livros Públicos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family: Arial;
+  background:#111827;
+  color:white;
+  padding:20px;
+}
+input{
+  padding:10px;
+  width:250px;
+}
+button{
+  padding:10px;
+}
+#lista div{
+  padding:10px;
+  border-bottom:1px solid #1f2937;
+  cursor:pointer;
+}
+#leitor{
+  margin-top:20px;
+  padding:15px;
+  background:#020617;
+  border-radius:10px;
+  height:65vh;
+  overflow-y:auto;
+  white-space:pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📚 Leitor público (Gutendex + proxycors)</h1>
+
+<input id="q" placeholder="Digite o nome do livro">
+<button onclick="buscar()">Buscar</button>
+
+<div id="lista"></div>
+
+<h2>Leitura</h2>
+<div id="leitor">Nenhum livro selecionado ainda…</div>
+
+<script>
+const CORS = "https://proxycors.io/?";
+
+async function buscar(){
+  const termo = document.getElementById("q").value;
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "Buscando...";
+
+  const res = await fetch(`https://gutendex.com/books/?search=${encodeURIComponent(termo)}`);
+  const data = await res.json();
+
+  if(!data.results || data.results.length === 0){
+    lista.innerHTML = "Nenhum livro encontrado.";
+    return;
+  }
+
+  lista.innerHTML = "";
+
+  data.results.forEach(livro=>{
+    const d = document.createElement("div");
+    d.innerHTML = `<strong>${livro.title}</strong><br>${livro.authors.map(a=>a.name).join(", ")}`;
+    d.onclick = ()=>abrir(livro);
+    lista.appendChild(d);
+  });
+}
+
+async function abrir(livro){
+  const leitor = document.getElementById("leitor");
+  leitor.innerHTML = "Carregando livro...";
+
+  const f = livro.formats;
+
+  const url =
+    f["text/plain; charset=utf-8"] ||
+    f["text/plain"] ||
+    f["text/html; charset=utf-8"] ||
+    f["text/html"];
+
+  if(!url){
+    leitor.innerHTML = "Este livro não possui texto disponível.";
+    return;
+  }
+
+  const proxied = CORS + encodeURIComponent(url);
+
+  const res = await fetch(proxied);
+  const texto = await res.text();
+
+  if(texto.includes("<html"))
+    leitor.innerHTML = texto;
+  else
+    leitor.textContent = texto;
+}
+</script>
+
+</body>
+</html>

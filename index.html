@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<title>Leitor de Livros – GutenbergAPI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+    margin:0;
+    padding:20px;
+}
+input, button{
+    padding:10px;
+    font-size:16px;
+}
+#results{
+    margin-top:15px;
+}
+.book{
+    padding:10px;
+    margin:10px 0;
+    background:#020617;
+    border-radius:8px;
+    cursor:pointer;
+}
+#reader{
+    margin-top:20px;
+    padding:15px;
+    background:black;
+    border-radius:12px;
+    height:60vh;
+    overflow-y:auto;
+    white-space:pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Leitor de livros – Project Gutenberg</h1>
+
+<input id="search" placeholder="Buscar por título ou autor..." />
+<button onclick="searchBooks()">Buscar</button>
+
+<div id="results"></div>
+
+<h2>📖 Leitura</h2>
+<div id="reader">Selecione um livro acima…</div>
+
+<script>
+async function searchBooks(){
+    const query = document.getElementById("search").value;
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "Buscando...";
+
+    try{
+        // Endpoint da GutenbergAPI (texto completo disponível)
+        const res = await fetch(`https://gutenbergapi.com/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        if(!data.books || data.books.length === 0){
+            resultsDiv.innerHTML = "Nenhum livro encontrado.";
+            return;
+        }
+
+        resultsDiv.innerHTML = "";
+
+        data.books.forEach(book=>{
+            const div = document.createElement("div");
+            div.className = "book";
+            div.innerHTML = `<strong>${book.title}</strong><br>${book.author || ""}`;
+            div.onclick = ()=>loadBook(book.id);
+            resultsDiv.appendChild(div);
+        });
+
+    }catch(e){
+        resultsDiv.innerHTML = "Erro ao buscar livros.";
+        console.error(e);
+    }
+}
+
+async function loadBook(id){
+    const reader = document.getElementById("reader");
+    reader.innerHTML = "Carregando conteúdo do livro...";
+
+    try{
+        const res = await fetch(`https://gutenbergapi.com/api/book/${id}`);
+        const data = await res.json();
+
+        reader.innerHTML = `<h3>${data.title}</h3>\n\n` + data.text;
+
+    }catch(e){
+        reader.innerHTML = "Erro ao carregar livro.";
+        console.error(e);
+    }
+}
+</script>
+
+</body>
+</html>
